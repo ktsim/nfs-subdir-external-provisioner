@@ -1,0 +1,18 @@
+# Build the v4.0.2 provisioner with the HTTP/2 Rapid Reset fixes.
+FROM docker.io/library/golang:1.26.9@sha256:cf7e928cb9edc2ed8b3cc6fe77ee1ee30b9fea28149564c8840097321a7600ea AS build
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY cmd ./cmd
+ARG TARGETARCH=amd64
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go test -mod=readonly ./cmd/...
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -mod=readonly -trimpath -o /out/nfs-subdir-external-provisioner ./cmd/nfs-subdir-external-provisioner
+RUN go version -m /out/nfs-subdir-external-provisioner
+
+# Preserve the exact published v4.0.2 runtime and configuration.
+# Build with Podman --squash-all to remove the old binary from inherited layers.
+FROM registry.k8s.io/sig-storage/nfs-subdir-external-provisioner@sha256:374f80dde8bbd498b1083348dd076b8d8d9f9b35386a793f102d5deebe593626
+LABEL org.opencontainers.image.version="4.0.2-kev.2"
+LABEL description="NFS subdir external provisioner v4.0.2 with CVE-2023-44487 remediation"
+COPY --from=build /out/nfs-subdir-external-provisioner /nfs-subdir-external-provisioner
+ENTRYPOINT ["/nfs-subdir-external-provisioner"]
