@@ -1,9 +1,11 @@
-# Local patch image for CVE-2023-44487 (HTTP/2 Rapid Reset).
-# Base: the ORIGINAL upstream v4.0.2 image (manifest list pinned by digest), so the OS layer is unchanged.
-# Only the provisioner binary is replaced with one rebuilt against golang.org/x/net v0.50.0.
-FROM registry.k8s.io/sig-storage/nfs-subdir-external-provisioner@sha256:63d5e04551ec8b5aae83b6f35938ca5ddc50a88d85492d9731810c31591fa4c9
+# Patched image: clean Red Hat UBI micro base + provisioner rebuilt with Go 1.26.9 and updated modules.
+# Does NOT layer on the upstream v4.0.2 image, so the old Go 1.15 binary and its dependencies are not carried along.
+# Build per architecture, e.g.:
+#   podman build --platform linux/amd64 --build-arg binary=./bin/nfs-subdir-external-provisioner_amd64 -f Dockerfile.patched .
+FROM registry.access.redhat.com/ubi9/ubi-micro:latest
 ARG binary=./bin/nfs-subdir-external-provisioner
-LABEL description="NFS subdir external provisioner (patched for CVE-2023-44487)"
-LABEL revision="v4.0.2-patch1"
-COPY ${binary} /nfs-subdir-external-provisioner
+LABEL description="NFS subdir external provisioner (patched dependencies and Go toolchain)"
+LABEL revision="v4.0.2-patch2"
+COPY --chmod=0755 ${binary} /nfs-subdir-external-provisioner
+USER 1001
 ENTRYPOINT ["/nfs-subdir-external-provisioner"]
