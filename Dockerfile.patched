@@ -1,6 +1,10 @@
 # Local patch image for CVE-2023-44487 (HTTP/2 Rapid Reset).
 # Base: the ORIGINAL upstream v4.0.2 image (manifest list pinned by digest), so the OS layer is unchanged.
 # Only the provisioner binary is replaced with one rebuilt against golang.org/x/net v0.50.0.
+# Build with --squash-all so the original (vulnerable) binary in the lower upstream layer is not shipped:
+#   podman build --squash-all --platform linux/amd64 --build-arg binary=./bin/nfs-subdir-external-provisioner_amd64 \
+#     -t nfs-subdir-external-provisioner:v4.0.2-patch1-squashed-amd64 -f Dockerfile.patched .
+#   podman save --format docker-archive -o dist/<name>.tar <image>
 FROM registry.k8s.io/sig-storage/nfs-subdir-external-provisioner@sha256:63d5e04551ec8b5aae83b6f35938ca5ddc50a88d85492d9731810c31591fa4c9
 ARG binary=./bin/nfs-subdir-external-provisioner
 LABEL description="NFS subdir external provisioner (patched for CVE-2023-44487)"
